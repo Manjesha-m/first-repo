@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"name": "MCFS_6426064: SFMC Connection",
+			"uri": "mcfs://6426064/"
+		}
+	],
+	"settings": {}
+}
