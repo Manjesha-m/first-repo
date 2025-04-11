@@ -4,6 +4,7 @@
     var prox = new Script.Util.WSProxy();
     Write("Changes from VS Code!");
     Write("Changes from SFMC to test in VS Code!");
+    Write("Added this line from github!");
     try {  
         var QDFulfilmentTargetDE = "MEP_Fulfilment_OnDemand_Email_Stage";
         var ExternalKey_Email_Followup_Drop2_Updates = "MEP_Fulfilment_OnDemand_Email_Followup_RulesConfig";
