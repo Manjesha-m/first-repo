@@ -1,0 +1,111 @@
+<script runat='server'>
+    Platform.Load("core", "1.1");
+
+    var prox = new Script.Util.WSProxy();
+    Write("Changes from VS Code!");
+    Write("Changes from SFMC to test in VS Code!");
+    try {  
+        var QDFulfilmentTargetDE = "MEP_Fulfilment_OnDemand_Email_Stage";
+        var ExternalKey_Email_Followup_Drop2_Updates = "MEP_Fulfilment_OnDemand_Email_Followup_RulesConfig";
+        var DE_MEP_Followup_Drop2_Updates = DataExtension.Init(ExternalKey_Email_Followup_Drop2_Updates);
+        var MEP_Followup_Drop2_Updates_ROWData = DE_MEP_Followup_Drop2_Updates.Rows.Retrieve();
+        var executionTime = Platform.Function.Now(); // Capture execution time
+
+        if (MEP_Followup_Drop2_Updates_ROWData.length > 0) {
+            for (var j = 0; j < MEP_Followup_Drop2_Updates_ROWData.length; j++) {
+                var FulfilmentQuery = MEP_Followup_Drop2_Updates_ROWData[j]["SQL"];
+                var recordID = MEP_Followup_Drop2_Updates_ROWData[j]["ID"]; 
+                
+                if (FulfilmentQuery && recordID) {
+                    var RowsAffected = QueryDefinitionExecuteAndPerform(
+                        QDFulfilmentTargetDE, 
+                        "MEP_Fulfilment_OnDemand_Email_Followup_Rules_Apply", 
+                        "MEP_FF_OD_Em_Followup_Rule_Apply", 
+                        FulfilmentQuery, 
+                        "Update"
+                    );
+
+                    // Write result instead of updating the DE
+                    Write("Record ID: " + recordID + " | Rows Affected: " + Stringify(RowsAffected) + "<br>");
+                } else {
+                    Write("Record ID: " + recordID + " | Rows Affected: Query Missing<br>");
+                }
+            }
+        }
+
+        function QueryDefinitionUpdate(qd, Query, UpdateType) {
+            qd = QueryDefinition.Init(qd);
+            var update_status = qd.Update({
+                QueryText: Query,
+                TargetUpdateType: UpdateType
+            });
+
+            if (!update_status) {
+                return false;
+            }
+            return true;
+        }
+
+        function QueryDefinitionExecuteAndPerform(QDTargetDE, QDName, QDCustomerKey, Query, UpdateType) {
+            var output = QueryDefinitionUpdate(QDCustomerKey, Query, UpdateType);
+            if (!output) {
+                return false;
+            }
+
+            var results = QueryDefinition.Retrieve({
+                Property: "CustomerKey",
+                SimpleOperator: "equals",
+                Value: QDCustomerKey
+            });
+
+            if (results != null && results.length > 0) {
+                var req = prox.performItem("QueryDefinition", {
+                    ObjectID: results[0].ObjectID
+                }, "Start");
+
+                if (req.Status != 'OK' || req.Results.length <= 0) {
+                    return false;
+                }
+
+                var TaskId = req.Results[0].Task.ID;
+                return isQueryDefinitionComplete(TaskId);
+            }
+            return false;
+        }
+
+        function isQueryDefinitionComplete(taskId) {
+            var complete = false;
+            var statusPosition = null;
+            var cols = ["Status"];
+            var filter = {
+                Property: "TaskID",
+                SimpleOperator: "equals",
+                Value: taskId
+            };
+
+            for (var i = 0; i < cols.length; i++) {
+                if (cols[i] == 'Status') {
+                    statusPosition = i;
+                    break;
+                }
+            }
+
+            while (!complete) {
+                complete = true;
+                var req = prox.retrieve("AsyncActivityStatus", cols, filter);
+                var status = req.Results[0].Properties[statusPosition].Value;
+
+                if (status == 'Queued' || status == 'Processing') {
+                    complete = false;
+                } else if (status == 'Complete') {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        }
+
+    } catch (err) {
+        Write("Error: " + Stringify(err));
+    }
+</script>

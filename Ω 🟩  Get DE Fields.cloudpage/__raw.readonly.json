@@ -1,0 +1,72 @@
+{
+  "id": 393389,
+  "customerKey": "9b842695-b736-40aa-a651-2407e90b0140",
+  "objectID": "d56a5f4b-6643-4a0b-a3f3-4851bb6dda91",
+  "contentType": "text/html",
+  "assetType": {
+    "id": 205,
+    "name": "webpage",
+    "displayName": "Web Page"
+  },
+  "version": 1,
+  "name": "Get DE Fields",
+  "owner": {
+    "id": 718145085,
+    "email": "nsatish1@pkglobal.com",
+    "name": "Satish Nagar",
+    "userId": "718145085"
+  },
+  "createdDate": "2024-11-26T04:06:10.827-06:00",
+  "createdBy": {
+    "id": 718145085,
+    "email": "nsatish1@pkglobal.com",
+    "name": "Satish Nagar",
+    "userId": "718145085"
+  },
+  "modifiedDate": "2025-04-11T01:33:16.74-06:00",
+  "modifiedBy": {
+    "id": 6638502,
+    "email": "manjesha.m@concentrix.com",
+    "name": "Manjesha Narayanappa",
+    "userId": "6638502"
+  },
+  "enterpriseId": 6421492,
+  "memberId": 6426064,
+  "status": {
+    "id": 1,
+    "name": "Draft"
+  },
+  "thumbnail": {
+    "thumbnailUrl": "/v1/assets/393389/thumbnail"
+  },
+  "category": {
+    "id": 118431,
+    "name": "Content Builder",
+    "parentId": 0
+  },
+  "meta": {
+    "globalStyles": {
+      "isLocked": false,
+      "body": {
+        "max-width": "1280px"
+      }
+    }
+  },
+  "views": {
+    "html": {
+      "thumbnail": {},
+      "content": "<script runat='server'>\n    Platform.Load(\"core\", \"1.1\");\n\n    var prox = new Script.Util.WSProxy();\n    Write(\"Changes from VS Code!\");\n    Write(\"Changes from SFMC to test in VS Code!\");\n    try {  \n        var QDFulfilmentTargetDE = \"MEP_Fulfilment_OnDemand_Email_Stage\";\n        var ExternalKey_Email_Followup_Drop2_Updates = \"MEP_Fulfilment_OnDemand_Email_Followup_RulesConfig\";\n        var DE_MEP_Followup_Drop2_Updates = DataExtension.Init(ExternalKey_Email_Followup_Drop2_Updates);\n        var MEP_Followup_Drop2_Updates_ROWData = DE_MEP_Followup_Drop2_Updates.Rows.Retrieve();\n        var executionTime = Platform.Function.Now(); // Capture execution time\n\n        if (MEP_Followup_Drop2_Updates_ROWData.length > 0) {\n            for (var j = 0; j < MEP_Followup_Drop2_Updates_ROWData.length; j++) {\n                var FulfilmentQuery = MEP_Followup_Drop2_Updates_ROWData[j][\"SQL\"];\n                var recordID = MEP_Followup_Drop2_Updates_ROWData[j][\"ID\"]; \n                \n                if (FulfilmentQuery && recordID) {\n                    var RowsAffected = QueryDefinitionExecuteAndPerform(\n                        QDFulfilmentTargetDE, \n                        \"MEP_Fulfilment_OnDemand_Email_Followup_Rules_Apply\", \n                        \"MEP_FF_OD_Em_Followup_Rule_Apply\", \n                        FulfilmentQuery, \n                        \"Update\"\n                    );\n\n                    // Write result instead of updating the DE\n                    Write(\"Record ID: \" + recordID + \" | Rows Affected: \" + Stringify(RowsAffected) + \"<br>\");\n                } else {\n                    Write(\"Record ID: \" + recordID + \" | Rows Affected: Query Missing<br>\");\n                }\n            }\n        }\n\n        function QueryDefinitionUpdate(qd, Query, UpdateType) {\n            qd = QueryDefinition.Init(qd);\n            var update_status = qd.Update({\n                QueryText: Query,\n                TargetUpdateType: UpdateType\n            });\n\n            if (!update_status) {\n                return false;\n            }\n            return true;\n        }\n\n        function QueryDefinitionExecuteAndPerform(QDTargetDE, QDName, QDCustomerKey, Query, UpdateType) {\n            var output = QueryDefinitionUpdate(QDCustomerKey, Query, UpdateType);\n            if (!output) {\n                return false;\n            }\n\n            var results = QueryDefinition.Retrieve({\n                Property: \"CustomerKey\",\n                SimpleOperator: \"equals\",\n                Value: QDCustomerKey\n            });\n\n            if (results != null && results.length > 0) {\n                var req = prox.performItem(\"QueryDefinition\", {\n                    ObjectID: results[0].ObjectID\n                }, \"Start\");\n\n                if (req.Status != 'OK' || req.Results.length <= 0) {\n                    return false;\n                }\n\n                var TaskId = req.Results[0].Task.ID;\n                return isQueryDefinitionComplete(TaskId);\n            }\n            return false;\n        }\n\n        function isQueryDefinitionComplete(taskId) {\n            var complete = false;\n            var statusPosition = null;\n            var cols = [\"Status\"];\n            var filter = {\n                Property: \"TaskID\",\n                SimpleOperator: \"equals\",\n                Value: taskId\n            };\n\n            for (var i = 0; i < cols.length; i++) {\n                if (cols[i] == 'Status') {\n                    statusPosition = i;\n                    break;\n                }\n            }\n\n            while (!complete) {\n                complete = true;\n                var req = prox.retrieve(\"AsyncActivityStatus\", cols, filter);\n                var status = req.Results[0].Properties[statusPosition].Value;\n\n                if (status == 'Queued' || status == 'Processing') {\n                    complete = false;\n                } else if (status == 'Complete') {\n                    return true;\n                } else {\n                    return false;\n                }\n            }\n        }\n\n    } catch (err) {\n        Write(\"Error: \" + Stringify(err));\n    }\n</script>\n",
+      "slots": {
+        "col1": {
+          "design": "<p style=\"font-family:arial;color:#ccc;font-size:11px;text-align:center;vertical-align:middle;font-weight:bold;padding:10px;margin:0;border:#ccc dashed 1px;\">Drop blocks or content here</p>",
+          "modelVersion": 2
+        }
+      },
+      "modelVersion": 2
+    }
+  },
+  "availableViews": [
+    "html"
+  ],
+  "modelVersion": 2
+}
